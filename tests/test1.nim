@@ -7,6 +7,6 @@
 
 import unittest
 
-import coveragepkg/submodule
+import shenpkg/submodule
 test "correct welcome":
   check getWelcomeMessage() == "Hello, World!"

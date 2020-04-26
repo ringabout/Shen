@@ -6,7 +6,7 @@ description   = "Experiment code coverage for Nim."
 license       = "Apache-2.0"
 srcDir        = "src"
 installExt    = @["nim"]
-bin           = @["coverage"]
+bin           = @["shen"]
 
 
 
