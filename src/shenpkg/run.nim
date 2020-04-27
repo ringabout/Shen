@@ -59,6 +59,3 @@ proc dispatch*() =
   if path.len != 0:
     let file = path.splitFile
     parseCov(file.dir / file.name)
-
-when isMainModule:
-  dispatch()
