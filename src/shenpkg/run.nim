@@ -1,4 +1,4 @@
-import os, osproc, strformat, sets, strutils
+import os, osproc, strformat, sets, strutils, parseopt
 
 
 const sysModule = ["arithmetics.nim.gcov", "sysstr.nim.gcov", 
@@ -10,25 +10,55 @@ let dirs = "results"
 let cacheDir = "cache"
 discard existsOrCreateDir(dirs)
 
-discard execCmdEx fmt"nim --debugger:native --nimcache:{dirs / cacheDir}  --verbosity:3 --passC:--coverage --passL:--coverage c all.nim"
-discard execCmdEx "all.exe"
 
-for file in walkFiles(dirs / cacheDir / "@m*.nim.c.gcno"):
-  discard execCmdEx fmt"gcov {file}"
-  # exec "gcov"
+proc parseCov*(filePath: string) =
+  var filePath = filePath
+  let nimFilePath = filePath.addFileExt("nim")
+
+  when defined(windows):
+    filePath = filePath.addFileExt("exe")
+
+  discard execCmdEx fmt"nim --debugger:native --nimcache:{dirs / cacheDir} " & 
+                    fmt"--passC:--coverage --passL:--coverage c {nimFilePath}"
+  discard execCmdEx filePath
+
+  for file in walkFiles(dirs / cacheDir / "@m*.nim.c.gcno"):
+    discard execCmdEx fmt"gcov {file}"
 
 
-for path in walkFiles("*.gcov"):
-  if existsFile(dirs / path):
-    removeFile(dirs / path)
-  
-  if path in sysModule or path.startsWith("@m"):
-    removeFile(path)
-  else:
-    moveFile(path, dirs / path)
+  for path in walkFiles("*.gcov"):
+    if existsFile(dirs / path):
+      removeFile(dirs / path)
+    
+    if path in sysModule or path.startsWith("@m"):
+      removeFile(path)
+    else:
+      moveFile(path, dirs / path)
 
-removeDir(dirs / cacheDir)
+  removeDir(dirs / cacheDir)
 
-# exec "gcov cache/@mall.nim.c.gcno"
-# exec "gcov cache/@mhello.nim.c.gcno"
-# exec "gcov cache/@mfunny.nim.c.gcno"
+proc dispatch*() =
+  var
+    op = initOptParser()
+    path: string
+
+  while true:
+    op.next()
+    case op.kind
+    of {cmdLongOption, cmdShortOption}:
+      case op.key
+      of "help", "h":
+        stdout.write("This is help.")
+      else:
+        discard
+    of cmdArgument:
+      path = op.key
+    of cmdEnd:
+      break
+
+  if path.len != 0:
+    let file = path.splitFile
+    parseCov(file.dir / file.name)
+
+when isMainModule:
+  dispatch()
